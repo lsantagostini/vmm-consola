@@ -1,0 +1,30 @@
+# --- Compilación C++ y Qt ---
+build/
+*.o
+*.obj
+*.so
+Makefile
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cbp
+
+# --- Archivos generados por Qt ---
+moc_*.cpp
+ui_*.h
+.qmake.stash
+
+# --- Configuración de usuario de Qt Creator (¡IMPORTANTE NO SUBIR!) ---
+*.pro.user
+*.pro.user.*
+CMakeLists.txt.user
+CMakeLists.txt.user*
+
+# --- Ejecutables ---
+vmConsola
+
+# --- Sistema ---
+.DS_Store
+*.swp
+*~
+*.core
