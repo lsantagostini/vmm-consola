@@ -17,9 +17,9 @@
 #include <QProcess>
 #include <QHeaderView>
 #include <QMessageBox>
-#include <QFile>        // Necesario para leer vm.conf
-#include <QTextStream>  // Necesario para leer texto del archivo
-#include <QMap>         // Necesario para cruzar datos de estado
+#include <QFile>
+#include <QTextStream>
+#include <QMap>
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -29,24 +29,21 @@ public:
     ~MainWindow();
 
 private slots:
-    void refrescarLista();      // Lanza el comando vmctl status
-    void procesarEstado();      // Lee la salida y actualiza la tabla
-    void iniciarMaquina();      // Lanza vmctl start
-    void detenerMaquina();      // Lanza vmctl stop
+    void refrescarLista();
+    void procesarEstado();
+    void iniciarMaquina();
+    void detenerMaquina();
 
 private:
-    // Función auxiliar interna
-    QStringList leerVmConf();   // Lee los nombres de las VMs en /etc/vm.conf
+    QStringList leerVmConf();
 
-    // Elementos de la interfaz
     QTableWidget *tablaVMs;
     QPushButton *btnRefrescar;
     QPushButton *btnIniciar;
     QPushButton *btnDetener;
 
-    // Procesos
-    QProcess *procesoInfo;      // Para consultas
-    QProcess *procesoControl;   // Para acciones (start/stop)
+    QProcess *procesoInfo;
+    QProcess *procesoControl;
 };
 
 #endif // MAINWINDOW_H

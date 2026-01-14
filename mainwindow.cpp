@@ -7,7 +7,7 @@
  */
 
 #include "mainwindow.h"
-#include <QDebug> // Para ver logs en la consola de Qt Creator si hace falta
+#include <QDebug>
 #include <utility>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -16,24 +16,18 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("OpenBSD VMD Manager");
     resize(750, 450);
 
-    // --- 1. CONFIGURACIÓN DE LA TABLA ---
     tablaVMs = new QTableWidget(this);
     tablaVMs->setColumnCount(3);
     tablaVMs->setHorizontalHeaderLabels(QStringList() << "Nombre" << "Estado" << "ID / Info");
-    // Hacemos que la columna de estado y nombre se estiren
     tablaVMs->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    // Seleccionar fila completa
     tablaVMs->setSelectionBehavior(QAbstractItemView::SelectRows);
     tablaVMs->setSelectionMode(QAbstractItemView::SingleSelection);
-    // Que no se pueda editar escribiendo en la celda
     tablaVMs->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    // --- 2. CONFIGURACIÓN DE BOTONES ---
     btnRefrescar = new QPushButton("🔄 Refrescar", this);
     btnIniciar = new QPushButton("▶️ Iniciar", this);
     btnDetener = new QPushButton("⏹️ Detener", this);
 
-    // Colores para evitar accidentes
     btnIniciar->setStyleSheet("color: green; font-weight: bold;");
     btnDetener->setStyleSheet("color: red; font-weight: bold;");
 
@@ -42,36 +36,29 @@ MainWindow::MainWindow(QWidget *parent)
     layoutBotones->addWidget(btnIniciar);
     layoutBotones->addWidget(btnDetener);
 
-    // --- 3. LAYOUT PRINCIPAL ---
     QWidget *central = new QWidget();
     QVBoxLayout *layoutMain = new QVBoxLayout(central);
     layoutMain->addWidget(tablaVMs);
     layoutMain->addLayout(layoutBotones);
     setCentralWidget(central);
 
-    // --- 4. PROCESOS ---
     procesoInfo = new QProcess(this);
     procesoControl = new QProcess(this);
 
-    // --- 5. CONEXIONES (SIGNALS & SLOTS) ---
     connect(btnRefrescar, &QPushButton::clicked, this, &MainWindow::refrescarLista);
     connect(btnIniciar, &QPushButton::clicked, this, &MainWindow::iniciarMaquina);
     connect(btnDetener, &QPushButton::clicked, this, &MainWindow::detenerMaquina);
 
-    // IMPORTANTE: Usamos 'finished' en lugar de 'readyRead' para asegurarnos
-    // de leer la respuesta completa de vmctl antes de procesarla.
     connect(procesoInfo, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, [this](int, QProcess::ExitStatus){
         procesarEstado();
     });
 
-    // Cargar lista al arrancar
     refrescarLista();
 }
 
 MainWindow::~MainWindow() {}
 
-// --- LÓGICA: Leer configuración ---
 QStringList MainWindow::leerVmConf() {
     QStringList maquinas;
     QFile archivo("/etc/vm.conf");
@@ -83,7 +70,6 @@ QStringList MainWindow::leerVmConf() {
     QTextStream in(&archivo);
     while (!in.atEnd()) {
         QString linea = in.readLine().trimmed();
-        // Buscamos líneas tipo: vm "nombre" {
         if (linea.startsWith("vm ") && linea.contains("\"")) {
             int inicio = linea.indexOf("\"") + 1;
             int fin = linea.indexOf("\"", inicio);
@@ -98,44 +84,30 @@ QStringList MainWindow::leerVmConf() {
     return maquinas;
 }
 
-// --- LÓGICA: Refrescar ---
 void MainWindow::refrescarLista() {
-    // Ejecutamos vmctl status sin doas (porque son tus VMs)
     procesoInfo->start("vmctl", QStringList() << "status");
 }
 
-// --- LÓGICA: Procesar Salida (La parte crítica) ---
 void MainWindow::procesarEstado() {
-    // 1. Obtener lista base desde archivo
     QStringList todasLasVMs = leerVmConf();
 
-    // 2. Leer salida de vmctl status
     QByteArray salida = procesoInfo->readAllStandardOutput();
     QString texto = QString::fromLocal8Bit(salida);
     QStringList lineasRunning = texto.split("\n");
 
     QMap<QString, QString> idsReales;
-    QMap<QString, QString> estadosReales; // Aquí guardaremos "running", "stopped", etc.
-
-    // 3. Analizar vmctl status línea por línea
-    // Ejemplo de tu salida:
-    // ID   PID VCPUS MAXMEM CURMEM TTY OWNER    STATE   NAME
-    // 1    -   1     2.0G   -      -   leonardo stopped debian
+    QMap<QString, QString> estadosReales;
 
     for (int i = 1; i < lineasRunning.size(); ++i) {
-        QString linea = lineasRunning[i].simplified(); // Quita espacios extra
+        QString linea = lineasRunning[i].simplified();
         if (linea.isEmpty()) continue;
 
         QStringList partes = linea.split(" ");
 
-        // Necesitamos asegurar que tenga suficientes columnas.
-        // En tu ejemplo son 9 columnas.
+
         if (partes.size() >= 8) {
             QString id = partes[0];
-            QString nombre = partes.last(); // "debian"
-
-            // El estado suele ser la anteúltima columna si el nombre es la última
-            // partes.size() - 2 nos da la columna anterior al nombre.
+            QString nombre = partes.last();
             QString estado = partes.at(partes.size() - 2);
 
             estadosReales.insert(nombre, estado);
@@ -143,7 +115,6 @@ void MainWindow::procesarEstado() {
         }
     }
 
-    // 4. Llenar la tabla visual
     tablaVMs->setRowCount(0);
 
     for (const QString &nombreVM : std::as_const(todasLasVMs)) {
@@ -180,7 +151,6 @@ void MainWindow::procesarEstado() {
     }
 }
 
-// --- LÓGICA: Iniciar ---
 void MainWindow::iniciarMaquina() {
     int fila = tablaVMs->currentRow();
     if (fila < 0) return;
@@ -193,16 +163,13 @@ void MainWindow::iniciarMaquina() {
         return;
     }
 
-    // Ejecutamos vmctl start nombre
     procesoControl->start("vmctl", QStringList() << "start" << nombre);
     procesoControl->waitForFinished();
 
-    // Esperamos un segundo para que le de tiempo a cambiar de estado
     QProcess::execute("sleep 1");
     refrescarLista();
 }
 
-// --- LÓGICA: Detener ---
 void MainWindow::detenerMaquina() {
     int fila = tablaVMs->currentRow();
     if (fila < 0) return;
@@ -214,10 +181,8 @@ void MainWindow::detenerMaquina() {
         return;
     }
 
-    // Sacamos el numero limpio
     QString id = idInfo.split(" ").last();
 
-    // Confirmación
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(this, "Confirmar", "¿Detener la VM ID " + id + "?",
                                   QMessageBox::Yes|QMessageBox::No);
