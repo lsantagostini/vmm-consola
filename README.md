@@ -3,6 +3,7 @@
 ![License](https://img.shields.io/badge/License-ISC-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-OpenBSD-orange.svg)
 ![Framework](https://img.shields.io/badge/Qt-6.0%2B-green.svg)
+![CI Status](https://github.com/lsantagostini/vmm-consola/actions/workflows/ci.yml/badge.svg)
 
 Una interfaz gráfica (GUI) simple y nativa para administrar máquinas virtuales en OpenBSD utilizando `vmd(8)` y `vmctl(8)`.
 
