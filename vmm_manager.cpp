@@ -7,56 +7,53 @@
 
 VmmManager::VmmManager() {}
 
-QStringList VmmManager::leerConfiguracion(const QString &rutaArchivo)
+QStringList VmmManager::readConfiguration(const QString &filePath)
 {
-    QStringList maquinas;
-    QFile archivo(rutaArchivo);
+    QStringList vms;
+    QFile file(filePath);
 
-    if (!archivo.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return maquinas;
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return vms;
     }
 
-    QTextStream in(&archivo);
+    QTextStream in(&file);
     while (!in.atEnd()) {
-        QString linea = in.readLine().trimmed();
-        // Lógica de parsing básica de vm.conf
-        if (linea.startsWith("vm ") && linea.contains("\"")) {
-            int inicio = linea.indexOf("\"") + 1;
-            int fin = linea.indexOf("\"", inicio);
-            if (fin > inicio) {
-                QString nombre = linea.mid(inicio, fin - inicio);
-                if (!maquinas.contains(nombre)) {
-                    maquinas.append(nombre);
+        QString line = in.readLine().trimmed();
+        if (line.startsWith("vm ") && line.contains("\"")) {
+            int start = line.indexOf("\"") + 1;
+            int end = line.indexOf("\"", start);
+            if (end > start) {
+                QString name = line.mid(start, end - start);
+                if (!vms.contains(name)) {
+                    vms.append(name);
                 }
             }
         }
     }
-    return maquinas;
+    return vms;
 }
 
-QMap<QString, VmEstado> VmmManager::parsearSalidaVmctl(const QString &salidaRaw)
+QMap<QString, VmState> VmmManager::parseVmctlOutput(const QString &rawOutput)
 {
-    QMap<QString, VmEstado> mapaEstados;
+    QMap<QString, VmState> stateMap;
 
-    // Normalizamos saltos de línea
-    QString texto = salidaRaw;
-    QStringList lineas = texto.split("\n");
+    QString text = rawOutput;
+    QStringList lines = text.split("\n");
 
-    // Empezamos en 1 para saltar la cabecera (ID  PID  VCPUS  MAXMEM  ...)
-    for (int i = 1; i < lineas.size(); ++i) {
-        QString linea = lineas[i].simplified();
-        if (linea.isEmpty()) continue;
+    for (int i = 1; i < lines.size(); ++i) {
+        QString line = lines[i].simplified();
+        if (line.isEmpty()) continue;
 
-        QStringList partes = linea.split(" ");
+        QStringList parts = line.split(" ");
 
-        if (partes.size() >= 8) {
-            VmEstado estadoObj;
-            estadoObj.id = partes[0];      // ID es la primera columna
-            QString nombre = partes.last(); // Nombre es la última
-            estadoObj.estado = partes.at(partes.size() - 2); // Estado es anteúltima
+        if (parts.size() >= 8) {
+            VmState stateObj;
+            stateObj.id = parts[0];
+            QString name = parts.last();
+            stateObj.state = parts.at(parts.size() - 2);
 
-            mapaEstados.insert(nombre, estadoObj);
+            stateMap.insert(name, stateObj);
         }
     }
-    return mapaEstados;
+    return stateMap;
 }

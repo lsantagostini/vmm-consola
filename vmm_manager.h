@@ -12,10 +12,9 @@
 #include <QFile>
 #include <QTextStream>
 
-// Estructura simple para guardar el estado de una VM
-struct VmEstado {
+struct VmState {
     QString id;
-    QString estado; // "running", "stopped", etc.
+    QString state;
 };
 
 class VmmManager
@@ -23,11 +22,8 @@ class VmmManager
 public:
     VmmManager();
 
-    // Permite pasar una ruta distinta para facilitar los TESTS
-    QStringList leerConfiguracion(const QString &rutaArchivo = "/etc/vm.conf");
-
-    // Recibe el texto crudo de vmctl y devuelve un mapa de estados
-    QMap<QString, VmEstado> parsearSalidaVmctl(const QString &salidaRaw);
+    QStringList readConfiguration(const QString &filePath = "/etc/vm.conf");
+    QMap<QString, VmState> parseVmctlOutput(const QString &rawOutput);
 };
 
 #endif // VMM_MANAGER_H

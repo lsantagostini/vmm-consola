@@ -12,64 +12,53 @@ class TestManager : public QObject
     Q_OBJECT
 
 private slots:
-    void initTestCase()
-    {
-        // Se ejecuta al inicio de todas las pruebas
-    }
+    void initTestCase() {}
 
-    void testParsearEstado()
+    void testParseState()
     {
         VmmManager manager;
 
-        // Simulamos una salida limpia de OpenBSD (8 columnas exactas)
-        QString salidaSimulada =
+        QString simulatedOutput =
             "   ID  PID VCPUS  MAXMEM  CURMEM     TTY        OWNER NAME\n"
             "    1 5626     1    512M    305M   ttyp6     leonardo alpine\n"
             "    2 1234     1    1024M   100M   ttyp7     leonardo debian";
 
-        // Ejecutamos la función a probar
-        QMap<QString, VmEstado> resultado = manager.parsearSalidaVmctl(salidaSimulada);
+        QMap<QString, VmState> result = manager.parseVmctlOutput(simulatedOutput);
 
-        // Verificaciones
-        // 1. Caso Alpine
-        QVERIFY2(resultado.contains("alpine"), "La VM 'alpine' no fue detectada");
-        QCOMPARE(resultado["alpine"].id, "1");
+        QVERIFY2(result.contains("alpine"), "VM 'alpine' not detected");
+        QCOMPARE(result["alpine"].id, "1");
 
-        // 2. Caso Debian (Ahora debería pasar porque quitamos el guion extra)
-        QVERIFY2(resultado.contains("debian"), "La VM 'debian' no fue detectada");
-        QCOMPARE(resultado["debian"].id, "2");
+        QVERIFY2(result.contains("debian"), "VM 'debian' not detected");
+        QCOMPARE(result["debian"].id, "2");
     }
 
-    void testLeerConfig()
+    void testReadConfig()
     {
         VmmManager manager;
 
-        QTemporaryFile archivoTemp;
-        if (archivoTemp.open()) {
-            QTextStream out(&archivoTemp);
+        QTemporaryFile tempFile;
+        if (tempFile.open()) {
+            QTextStream out(&tempFile);
             out << "switch \"uplink\" {\n";
             out << "    interface bridge0\n";
             out << "}\n";
-            out << "vm \"maquina_prueba\" {\n";
+            out << "vm \"test_vm\" {\n";
             out << "    memory 512M\n";
             out << "}\n";
-            out << "vm \"servidor_web\" {\n";
+            out << "vm \"web_server\" {\n";
             out << "    disable\n";
             out << "}\n";
-            archivoTemp.close();
+            tempFile.close();
 
-            QStringList maquinas = manager.leerConfiguracion(archivoTemp.fileName());
+            QStringList vms = manager.readConfiguration(tempFile.fileName());
 
-            QCOMPARE(maquinas.size(), 2);
-            QVERIFY(maquinas.contains("maquina_prueba"));
-            QVERIFY(maquinas.contains("servidor_web"));
+            QCOMPARE(vms.size(), 2);
+            QVERIFY(vms.contains("test_vm"));
+            QVERIFY(vms.contains("web_server"));
         }
     }
 
-    void cleanupTestCase()
-    {
-        // Limpieza final
-    }
+    void cleanupTestCase() {}
 };
 
 QTEST_MAIN(TestManager)

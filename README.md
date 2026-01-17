@@ -5,59 +5,61 @@
 ![Framework](https://img.shields.io/badge/Qt-6.0%2B-green.svg)
 ![CI Status](https://github.com/lsantagostini/vmm-consola/actions/workflows/ci.yml/badge.svg)
 
-Una interfaz gráfica (GUI) simple y nativa para administrar máquinas virtuales en OpenBSD utilizando `vmd(8)` y `vmctl(8)`.
+A simple, native GUI for managing virtual machines on OpenBSD using `vmd(8)` and `vmctl(8)`.
 
-El objetivo es proveer una herramienta ligera, escrita en **C++** y **Qt 6**, que se integre visual y funcionalmente con el sistema base, respetando la filosofía del sistema.
+The goal is to provide a lightweight tool, written in **C++** and **Qt 6**, that integrates visually and functionally with the base system, respecting the OS philosophy.
 
-## Características
+![Screenshot](screenshot.png)
 
-* **Detección inteligente:** Lee `/etc/vm.conf` para listar las máquinas configuradas.
-* **Estado en tiempo real:** Cruza información con `vmctl status` para indicar visualmente si las VMs están corriendo o detenidas.
-* **Control simple:** Permite iniciar y detener máquinas con un solo clic.
-* **Sin privilegios innecesarios:** Diseñado para gestionar VMs del usuario actual sin requerir `root` ni `doas` para las operaciones cotidianas.
+## Features
 
-## Requisitos
+* **Smart Detection:** Reads `/etc/vm.conf` to list configured machines.
+* **Real-time Status:** Cross-references data with `vmctl status` to visually indicate if VMs are running or stopped.
+* **Simple Control:** Start, stop, and open console for virtual machines with a single click.
+* **Privilege Separation:** Designed to manage the current user's VMs without requiring `root` or `doas` for GUI operations.
+* **Console Access:** Spawns `xterm` connected to the VM serial console.
 
-* **Sistema Operativo:** OpenBSD (Probado en versión 7.8)
-* **Librerías:** Qt 6 (`qt6-qtbase`)
-* **Herramientas:** CMake, Compilador C++ (clang viene por defecto)
+## Requirements
 
-## Instalación
+* **OS:** OpenBSD (Targeting 7.8)
+* **Libraries:** Qt 6 (`qt6-qtbase`)
+* **Tools:** CMake, C++ Compiler (clang is default)
 
-### 1. Instalar Dependencias
-Ejecuta lo siguiente en tu terminal para instalar las herramientas necesarias:
+## Installation
+
+### 1. Install Dependencies
+Run the following to install necessary tools:
 
 ```ksh
 doas pkg_add qt6-qtbase cmake
 ```
 
-### 2. Compilación
-Sigue estos pasos para compilar el proyecto desde el código fuente:
+### 2. Build
+Follow these steps to build from source:
 
 ```ksh
-# 1. Crear directorio de compilación para mantener el orden
+# 1. Create build directory
 mkdir build && cd build
 
-# 2. Generar el Makefile con CMake
+# 2. Generate Makefile with CMake
 cmake ..
 
-# 3. Compilar el proyecto
+# 3. Compile
 make
 
-# 4. Ejecutar la aplicación
+# 4. Run
 ./vmConsola
 ```
 
-## Licencia
+## License
 
-El código fuente de este proyecto está liberado bajo la **Licencia ISC** (funcionalmente equivalente a BSD 2-Clause), alineada con la filosofía de OpenBSD.
-
-Consulta el archivo [LICENSE](LICENSE) para ver el texto completo.
+This project is released under the **ISC License**, aligned with the OpenBSD philosophy.
+See the [LICENSE](LICENSE) file for the full text.
 
 ---
 
-### Créditos de Terceros
+### Third Party Credits
 
-Este software utiliza el framework **Qt 6**, el cual está licenciado bajo la **GNU Lesser General Public License (LGPL) version 3**.
-* Qt es propiedad de The Qt Company Ltd. y otros colaboradores.
-* Más información y código fuente en [qt.io](https://www.qt.io).
+This software uses the **Qt 6** framework, licensed under the **GNU Lesser General Public License (LGPL) version 3**.
+* Qt is property of The Qt Company Ltd. and other contributors.
+* More info at [qt.io](https://www.qt.io).

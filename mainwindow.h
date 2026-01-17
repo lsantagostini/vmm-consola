@@ -16,7 +16,6 @@
 #include <QMessageBox>
 #include <QMap>
 
-// Incluimos la nueva lógica separada
 #include "vmm_manager.h"
 
 class MainWindow : public QMainWindow {
@@ -27,24 +26,23 @@ public:
     ~MainWindow();
 
 private slots:
-    void refrescarLista();
-    void procesarEstado();
-    void iniciarMaquina();
-    void detenerMaquina();
-    void abrirConsola(); // <--- Slot Nuevo
+    void refreshList();
+    void processState();
+    void startVm();
+    void stopVm();
+    void openConsole();
 
 private:
-    // Instancia del gestor de lógica
     VmmManager manager;
 
-    QTableWidget *tablaVMs;
-    QPushButton *btnRefrescar;
-    QPushButton *btnIniciar;
-    QPushButton *btnDetener;
-    QPushButton *btnConsola; // <--- Botón Nuevo
+    QTableWidget *vmTable;
+    QPushButton *btnRefresh;
+    QPushButton *btnStart;
+    QPushButton *btnStop;
+    QPushButton *btnConsole;
 
-    QProcess *procesoInfo;
-    QProcess *procesoControl;
+    QProcess *infoProcess;
+    QProcess *controlProcess;
 };
 
 #endif // MAINWINDOW_H

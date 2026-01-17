@@ -13,177 +13,171 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(tr("OpenBSD VMD Manager"));
     resize(750, 450);
 
-    tablaVMs = new QTableWidget(this);
-    tablaVMs->setColumnCount(3);
-    // Usamos tr() para traducción
-    tablaVMs->setHorizontalHeaderLabels(QStringList()
-        << tr("Nombre") << tr("Estado") << tr("ID / Info"));
+    vmTable = new QTableWidget(this);
+    vmTable->setColumnCount(3);
+    vmTable->setHorizontalHeaderLabels(QStringList()
+        << tr("Name") << tr("Status") << tr("ID / Info"));
 
-    tablaVMs->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    tablaVMs->setSelectionBehavior(QAbstractItemView::SelectRows);
-    tablaVMs->setSelectionMode(QAbstractItemView::SingleSelection);
-    tablaVMs->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    vmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    vmTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    vmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    vmTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    btnRefrescar = new QPushButton(tr("🔄 Refrescar"), this);
-    btnIniciar = new QPushButton(tr("▶️ Iniciar"), this);
-    btnDetener = new QPushButton(tr("⏹️ Detener"), this);
-    btnConsola = new QPushButton(tr("💻 Consola"), this); // <--- Nuevo
+    btnRefresh = new QPushButton(tr("🔄 Refresh"), this);
+    btnStart = new QPushButton(tr("▶️ Start"), this);
+    btnStop = new QPushButton(tr("⏹️ Stop"), this);
+    btnConsole = new QPushButton(tr("💻 Console"), this);
 
-    // Estilos
-    btnIniciar->setStyleSheet("color: green; font-weight: bold;");
-    btnDetener->setStyleSheet("color: red; font-weight: bold;");
-    btnConsola->setStyleSheet("font-weight: bold; color: blue;");
+    btnStart->setStyleSheet("color: green; font-weight: bold;");
+    btnStop->setStyleSheet("color: red; font-weight: bold;");
+    btnConsole->setStyleSheet("font-weight: bold; color: blue;");
 
-    QHBoxLayout *layoutBotones = new QHBoxLayout();
-    layoutBotones->addWidget(btnRefrescar);
-    layoutBotones->addWidget(btnIniciar);
-    layoutBotones->addWidget(btnDetener);
-    layoutBotones->addWidget(btnConsola); // <--- Nuevo
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addWidget(btnRefresh);
+    buttonLayout->addWidget(btnStart);
+    buttonLayout->addWidget(btnStop);
+    buttonLayout->addWidget(btnConsole);
 
     QWidget *central = new QWidget();
-    QVBoxLayout *layoutMain = new QVBoxLayout(central);
-    layoutMain->addWidget(tablaVMs);
-    layoutMain->addLayout(layoutBotones);
+    QVBoxLayout *mainLayout = new QVBoxLayout(central);
+    mainLayout->addWidget(vmTable);
+    mainLayout->addLayout(buttonLayout);
     setCentralWidget(central);
 
-    procesoInfo = new QProcess(this);
-    procesoControl = new QProcess(this);
+    infoProcess = new QProcess(this);
+    controlProcess = new QProcess(this);
 
-    connect(btnRefrescar, &QPushButton::clicked, this, &MainWindow::refrescarLista);
-    connect(btnIniciar, &QPushButton::clicked, this, &MainWindow::iniciarMaquina);
-    connect(btnDetener, &QPushButton::clicked, this, &MainWindow::detenerMaquina);
-    connect(btnConsola, &QPushButton::clicked, this, &MainWindow::abrirConsola); // <--- Nuevo
+    connect(btnRefresh, &QPushButton::clicked, this, &MainWindow::refreshList);
+    connect(btnStart, &QPushButton::clicked, this, &MainWindow::startVm);
+    connect(btnStop, &QPushButton::clicked, this, &MainWindow::stopVm);
+    connect(btnConsole, &QPushButton::clicked, this, &MainWindow::openConsole);
 
-    connect(procesoInfo, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+    connect(infoProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, [this](int, QProcess::ExitStatus){
-        procesarEstado();
+        processState();
     });
 
-    refrescarLista();
+    refreshList();
 }
 
 MainWindow::~MainWindow() {}
 
-void MainWindow::refrescarLista() {
-    procesoInfo->start("vmctl", QStringList() << "status");
+void MainWindow::refreshList() {
+    infoProcess->start("vmctl", QStringList() << "status");
 }
 
-void MainWindow::procesarEstado() {
-    // 1. Usamos el manager para leer config (/etc/vm.conf)
-    QStringList todasLasVMs = manager.leerConfiguracion();
+void MainWindow::processState() {
+    QStringList allVms = manager.readConfiguration();
 
-    // 2. Leemos la salida del proceso y parseamos con el manager
-    QByteArray salida = procesoInfo->readAllStandardOutput();
-    QString texto = QString::fromLocal8Bit(salida);
+    QByteArray output = infoProcess->readAllStandardOutput();
+    QString text = QString::fromLocal8Bit(output);
 
-    QMap<QString, VmEstado> infoEstados = manager.parsearSalidaVmctl(texto);
+    QMap<QString, VmState> states = manager.parseVmctlOutput(text);
 
-    tablaVMs->setRowCount(0);
+    vmTable->setRowCount(0);
 
-    for (const QString &nombreVM : std::as_const(todasLasVMs)) {
-        int row = tablaVMs->rowCount();
-        tablaVMs->insertRow(row);
+    for (const QString &vmName : std::as_const(allVms)) {
+        int row = vmTable->rowCount();
+        vmTable->insertRow(row);
 
-        QTableWidgetItem *itemNombre = new QTableWidgetItem(nombreVM);
-        QTableWidgetItem *itemEstado;
-        QTableWidgetItem *itemID;
+        QTableWidgetItem *itemName = new QTableWidgetItem(vmName);
+        QTableWidgetItem *itemState;
+        QTableWidgetItem *itemId;
 
-        // Valores por defecto
-        QString estadoTexto = "apagada";
-        QString idTexto = "-";
+        QString stateText = "stopped";
+        QString idText = "-";
 
-        if (infoEstados.contains(nombreVM)) {
-            estadoTexto = infoEstados.value(nombreVM).estado;
-            idTexto = infoEstados.value(nombreVM).id;
+        if (states.contains(vmName)) {
+            stateText = states.value(vmName).state;
+            idText = states.value(vmName).id;
         }
 
-        if (estadoTexto == "running") {
-            itemEstado = new QTableWidgetItem(tr("🟢 Ejecutando"));
-            itemEstado->setForeground(QBrush(Qt::darkGreen));
-            itemID = new QTableWidgetItem(tr("ID: ") + idTexto);
+        if (stateText == "running") {
+            itemState = new QTableWidgetItem(tr("🟢 Running"));
+            itemState->setForeground(QBrush(Qt::darkGreen));
+            itemId = new QTableWidgetItem(tr("ID: ") + idText);
         }
-        else if (estadoTexto == "stopped") {
-            itemEstado = new QTableWidgetItem(tr("⚫ Detenida (Stopped)"));
-            itemEstado->setForeground(QBrush(Qt::black));
-            itemID = new QTableWidgetItem(tr("ID: ") + idTexto);
+        else if (stateText == "stopped") {
+            itemState = new QTableWidgetItem(tr("⚫ Stopped"));
+            itemState->setForeground(QBrush(Qt::black));
+            itemId = new QTableWidgetItem(tr("ID: ") + idText);
         }
         else {
-            itemEstado = new QTableWidgetItem(tr("⚪ Apagada (Off)"));
-            itemEstado->setForeground(QBrush(Qt::gray));
-            itemID = new QTableWidgetItem("-");
+            itemState = new QTableWidgetItem(tr("⚪ Off"));
+            itemState->setForeground(QBrush(Qt::gray));
+            itemId = new QTableWidgetItem("-");
         }
 
-        tablaVMs->setItem(row, 0, itemNombre);
-        tablaVMs->setItem(row, 1, itemEstado);
-        tablaVMs->setItem(row, 2, itemID);
+        vmTable->setItem(row, 0, itemName);
+        vmTable->setItem(row, 1, itemState);
+        vmTable->setItem(row, 2, itemId);
     }
 }
 
-void MainWindow::iniciarMaquina() {
-    int fila = tablaVMs->currentRow();
-    if (fila < 0) return;
+void MainWindow::startVm() {
+    int row = vmTable->currentRow();
+    if (row < 0) return;
 
-    QString nombre = tablaVMs->item(fila, 0)->text();
-    QString estado = tablaVMs->item(fila, 1)->text();
+    QString name = vmTable->item(row, 0)->text();
+    QString status = vmTable->item(row, 1)->text();
 
-    if (estado.contains("🟢")) {
-        QMessageBox::information(this, tr("Aviso"), tr("La máquina ya está corriendo."));
+    if (status.contains("🟢")) {
+        QMessageBox::information(this, tr("Info"), tr("The virtual machine is already running."));
         return;
     }
 
-    procesoControl->start("vmctl", QStringList() << "start" << nombre);
-    procesoControl->waitForFinished();
+    controlProcess->start("vmctl", QStringList() << "start" << name);
+    controlProcess->waitForFinished();
 
     QProcess::execute("sleep 1");
-    refrescarLista();
+    refreshList();
 }
 
-void MainWindow::detenerMaquina() {
-    int fila = tablaVMs->currentRow();
-    if (fila < 0) return;
+void MainWindow::stopVm() {
+    int row = vmTable->currentRow();
+    if (row < 0) return;
 
-    QString idInfo = tablaVMs->item(fila, 2)->text();
+    QString idInfo = vmTable->item(row, 2)->text();
 
     if (!idInfo.contains("ID:")) {
-        QMessageBox::warning(this, tr("Error"), tr("La máquina no tiene ID (está apagada o no reportada)."));
+        QMessageBox::warning(this, tr("Error"), tr("The machine has no ID (it is off or not reported)."));
         return;
     }
 
     QString id = idInfo.split(" ").last();
 
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, tr("Confirmar"),
-                                  tr("¿Detener la VM ID %1?").arg(id),
+    reply = QMessageBox::question(this, tr("Confirm"),
+                                  tr("Stop VM ID %1?").arg(id),
                                   QMessageBox::Yes|QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
-        procesoControl->start("vmctl", QStringList() << "stop" << id);
-        procesoControl->waitForFinished();
+        controlProcess->start("vmctl", QStringList() << "stop" << id);
+        controlProcess->waitForFinished();
 
         QProcess::execute("sleep 1");
-        refrescarLista();
+        refreshList();
     }
 }
 
-void MainWindow::abrirConsola() {
-    int fila = tablaVMs->currentRow();
-    if (fila < 0) return;
+void MainWindow::openConsole() {
+    int row = vmTable->currentRow();
+    if (row < 0) return;
 
-    QString idInfo = tablaVMs->item(fila, 2)->text();
+    QString idInfo = vmTable->item(row, 2)->text();
 
     if (!idInfo.contains("ID:")) {
         QMessageBox::warning(this, tr("Error"),
-            tr("La máquina debe estar encendida (con ID) para abrir la consola."));
+            tr("Machine must be running (with ID) to open console."));
         return;
     }
 
     QString id = idInfo.split(" ").last();
 
-    // Lanzamos xterm ejecutando vmctl console
-    bool exito = QProcess::startDetached("xterm", QStringList() << "-e" << "vmctl" << "console" << id);
+    bool success = QProcess::startDetached("xterm", QStringList() << "-e" << "vmctl" << "console" << id);
 
-    if (!exito) {
+    if (!success) {
         QMessageBox::critical(this, tr("Error"),
-            tr("No se pudo iniciar xterm. Asegúrate de tener 'xterm' instalado."));
+            tr("Could not start xterm. Please ensure 'xterm' is installed."));
     }
 }
