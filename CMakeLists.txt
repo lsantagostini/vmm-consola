@@ -43,7 +43,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
 endif()
 
 # ==========================================
-#              ZONA DE TESTING
+#              TESTING
 # ==========================================
 enable_testing()
 
