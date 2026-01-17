@@ -9,11 +9,10 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Agregamos componente "Test"
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Test)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Test)
+# Ya no necesitamos LinguistTools, solo Widgets y Test
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Test)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Test)
 
-# Archivos fuente principales
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
@@ -22,19 +21,11 @@ set(PROJECT_SOURCES
         vmm_manager.h
 )
 
-set(TS_FILES vmConsola_en.ts)
-
-if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
-else()
-    qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
-endif()
-
-# Ejecutable Principal
+# Ejecutable Principal (Limpio, sin archivos QM)
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(vmConsola MANUAL_FINALIZATION ${PROJECT_SOURCES} ${QM_FILES})
+    qt_add_executable(vmConsola MANUAL_FINALIZATION ${PROJECT_SOURCES})
 else()
-    add_executable(vmConsola ${PROJECT_SOURCES} ${QM_FILES})
+    add_executable(vmConsola ${PROJECT_SOURCES})
 endif()
 
 target_link_libraries(vmConsola PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
@@ -56,15 +47,12 @@ endif()
 # ==========================================
 enable_testing()
 
-# Creamos el ejecutable de pruebas
 add_executable(tst_manager
     tst_manager.cpp
     vmm_manager.cpp
     vmm_manager.h
 )
 
-# Vinculamos con la librería de Test de Qt
 target_link_libraries(tst_manager PRIVATE Qt${QT_VERSION_MAJOR}::Test)
 
-# Registramos el test para que CTest lo reconozca
-add_test(NAME TestLogica COMMAND tst_manager)
+add_test(NAME TestLogic COMMAND tst_manager)

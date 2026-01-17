@@ -14,15 +14,11 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
+    // Mantenemos solo las traducciones internas de Qt (para diálogos estándar)
     QTranslator qtTranslator;
     if (qtTranslator.load("qt_" + QLocale::system().name(),
             QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
         a.installTranslator(&qtTranslator);
-    }
-
-    QTranslator myappTranslator;
-    if (myappTranslator.load("vmConsola_" + QLocale::system().name())) {
-        a.installTranslator(&myappTranslator);
     }
 
     MainWindow w;
