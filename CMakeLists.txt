@@ -9,54 +9,37 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+# Agregamos componente "Test"
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Test)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Test)
 
+# Archivos fuente principales
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
+        vmm_manager.cpp
+        vmm_manager.h
 )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(vmConsola
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET vmConsola APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
+set(TS_FILES vmConsola_en.ts)
+
+if(QT_VERSION_MAJOR GREATER_EQUAL 6)
+    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 else()
-    if(ANDROID)
-        add_library(vmConsola SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(vmConsola
-            ${PROJECT_SOURCES}
-        )
-    endif()
+    qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+endif()
+
+# Ejecutable Principal
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    qt_add_executable(vmConsola MANUAL_FINALIZATION ${PROJECT_SOURCES} ${QM_FILES})
+else()
+    add_executable(vmConsola ${PROJECT_SOURCES} ${QM_FILES})
 endif()
 
 target_link_libraries(vmConsola PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
-if(${QT_VERSION} VERSION_LESS 6.1.0)
-  set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.vmConsola)
-endif()
-set_target_properties(vmConsola PROPERTIES
-    ${BUNDLE_ID_OPTION}
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
-
+# Instalación
 include(GNUInstallDirs)
 install(TARGETS vmConsola
     BUNDLE DESTINATION .
@@ -67,3 +50,21 @@ install(TARGETS vmConsola
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(vmConsola)
 endif()
+
+# ==========================================
+#              ZONA DE TESTING
+# ==========================================
+enable_testing()
+
+# Creamos el ejecutable de pruebas
+add_executable(tst_manager
+    tst_manager.cpp
+    vmm_manager.cpp
+    vmm_manager.h
+)
+
+# Vinculamos con la librería de Test de Qt
+target_link_libraries(tst_manager PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+
+# Registramos el test para que CTest lo reconozca
+add_test(NAME TestLogica COMMAND tst_manager)

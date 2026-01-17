@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2026 Leonardo Santagostini <leonardo@santagostini.com.ar>
- *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * ISC License
  */
 
 #ifndef MAINWINDOW_H
@@ -17,9 +14,10 @@
 #include <QProcess>
 #include <QHeaderView>
 #include <QMessageBox>
-#include <QFile>
-#include <QTextStream>
 #include <QMap>
+
+// Incluimos la nueva lógica separada
+#include "vmm_manager.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -33,14 +31,17 @@ private slots:
     void procesarEstado();
     void iniciarMaquina();
     void detenerMaquina();
+    void abrirConsola(); // <--- Slot Nuevo
 
 private:
-    QStringList leerVmConf();
+    // Instancia del gestor de lógica
+    VmmManager manager;
 
     QTableWidget *tablaVMs;
     QPushButton *btnRefrescar;
     QPushButton *btnIniciar;
     QPushButton *btnDetener;
+    QPushButton *btnConsola; // <--- Botón Nuevo
 
     QProcess *procesoInfo;
     QProcess *procesoControl;

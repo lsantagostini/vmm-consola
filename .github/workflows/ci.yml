@@ -1,0 +1,37 @@
+name: Integración Continua (CI)
+
+# Configuración de disparadores: ¿Cuándo se ejecuta esto?
+on:
+  push:
+    branches: [ "main", "refactor/*" ] # Al hacer push a main o ramas de refactor
+  pull_request:
+    branches: [ "main" ]               # Al abrir un Pull Request hacia main
+
+jobs:
+  build-and-test:
+    name: Compilar y Probar (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Descargar tu código del repositorio
+    - name: Checkout del código
+      uses: actions/checkout@v4
+
+    # 2. Instalar Qt6 y herramientas necesarias en el servidor de Linux
+    - name: Instalar Dependencias (Qt6 + CMake)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake qt6-base-dev qt6-tools-dev qt6-l10n-tools
+
+    # 3. Configurar el proyecto (Generar Makefiles)
+    - name: Configurar CMake
+      run: cmake -B build -S .
+
+    # 4. Compilar todo (App principal + Tests)
+    - name: Compilar
+      run: cmake --build build
+
+    # 5. Ejecutar las pruebas automatizadas
+    # --output-on-failure nos mostrará detalles si algo falla
+    - name: Correr Tests Unitarios
+      run: cd build && ctest --output-on-failure
