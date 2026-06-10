@@ -21,7 +21,7 @@ The goal is to provide a lightweight tool, written in **C++** and **Qt 6**, that
 
 ## Requirements
 
-* **OS:** OpenBSD (Targeting 7.8)
+* **OS:** OpenBSD (Targeting 7.9)
 * **Libraries:** Qt 6 (`qt6-qtbase`)
 * **Tools:** CMake, C++ Compiler (clang is default)
 
