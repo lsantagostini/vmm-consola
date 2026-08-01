@@ -50,7 +50,7 @@ QMap<QString, VmState> VmmManager::parseVmctlOutput(const QString &rawOutput)
             VmState stateObj;
             stateObj.id = parts[0];
             QString name = parts.last();
-            stateObj.state = parts.at(parts.size() - 2);
+            stateObj.state = (parts[1] == "-") ? "stopped" : "running";
 
             stateMap.insert(name, stateObj);
         }

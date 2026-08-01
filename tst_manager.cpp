@@ -19,17 +19,19 @@ private slots:
         VmmManager manager;
 
         QString simulatedOutput =
-            "   ID  PID VCPUS  MAXMEM  CURMEM     TTY        OWNER NAME\n"
-            "    1 5626     1    512M    305M   ttyp6     leonardo alpine\n"
-            "    2 1234     1    1024M   100M   ttyp7     leonardo debian";
+        "   ID  PID VCPUS  MAXMEM  CURMEM     TTY        OWNER NAME\n"
+        "    1 5626     1    512M    305M   ttyp6     leonardo alpine\n"
+        "    2    -     1   1024M       -        -     leonardo debian";
 
         QMap<QString, VmState> result = manager.parseVmctlOutput(simulatedOutput);
 
         QVERIFY2(result.contains("alpine"), "VM 'alpine' not detected");
         QCOMPARE(result["alpine"].id, "1");
+        QCOMPARE(result["alpine"].state, "running");
 
         QVERIFY2(result.contains("debian"), "VM 'debian' not detected");
         QCOMPARE(result["debian"].id, "2");
+        QCOMPARE(result["debian"].state, "stopped");
     }
 
     void testReadConfig()
