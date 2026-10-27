@@ -22,7 +22,7 @@ class VmmManager
 public:
     VmmManager();
 
-    QStringList readConfiguration(const QString &filePath = "/etc/vm.conf");
+    QStringList readConfiguration(const QString &filePath = "/etc/vm.conf", bool *ok = nullptr);
     QMap<QString, VmState> parseVmctlOutput(const QString &rawOutput);
 };
 

@@ -60,6 +60,17 @@ private slots:
         }
     }
 
+    void testReadConfigMissingFile()
+    {
+        VmmManager manager;
+        bool ok = true;
+
+        QStringList vms = manager.readConfiguration("/nonexistent/vm.conf", &ok);
+
+        QVERIFY(!ok);
+        QVERIFY(vms.isEmpty());
+    }
+
     void cleanupTestCase() {}
 };
 

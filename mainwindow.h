@@ -31,8 +31,12 @@ private slots:
     void startVm();
     void stopVm();
     void openConsole();
+    void controlFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void controlFailed(QProcess::ProcessError error);
 
 private:
+    void setControlsEnabled(bool enabled);
+
     VmmManager manager;
 
     QTableWidget *vmTable;

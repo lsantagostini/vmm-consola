@@ -5,6 +5,7 @@
 
 #include "mainwindow.h"
 #include <QDebug>
+#include <QStatusBar>
 #include <utility>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -57,6 +58,10 @@ MainWindow::MainWindow(QWidget *parent)
         processState();
     });
 
+    connect(controlProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &MainWindow::controlFinished);
+    connect(controlProcess, &QProcess::errorOccurred, this, &MainWindow::controlFailed);
+
     refreshList();
 }
 
@@ -67,7 +72,13 @@ void MainWindow::refreshList() {
 }
 
 void MainWindow::processState() {
-    QStringList allVms = manager.readConfiguration();
+    bool configOk = false;
+    QStringList allVms = manager.readConfiguration("/etc/vm.conf", &configOk);
+
+    if (configOk)
+        statusBar()->clearMessage();
+    else
+        statusBar()->showMessage(tr("Could not read /etc/vm.conf: check that it exists and is readable."));
 
     QByteArray output = infoProcess->readAllStandardOutput();
     QString text = QString::fromLocal8Bit(output);
@@ -126,11 +137,10 @@ void MainWindow::startVm() {
         return;
     }
 
-    controlProcess->start("vmctl", QStringList() << "start" << name);
-    controlProcess->waitForFinished();
+    if (controlProcess->state() != QProcess::NotRunning) return;
 
-    QProcess::execute("sleep 1");
-    refreshList();
+    setControlsEnabled(false);
+    controlProcess->start("vmctl", QStringList() << "start" << name);
 }
 
 void MainWindow::stopVm() {
@@ -152,12 +162,37 @@ void MainWindow::stopVm() {
                                   QMessageBox::Yes|QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
-        controlProcess->start("vmctl", QStringList() << "stop" << id);
-        controlProcess->waitForFinished();
+        if (controlProcess->state() != QProcess::NotRunning) return;
 
-        QProcess::execute("sleep 1");
-        refreshList();
+        setControlsEnabled(false);
+        controlProcess->start("vmctl", QStringList() << "stop" << id);
     }
+}
+
+void MainWindow::controlFinished(int exitCode, QProcess::ExitStatus exitStatus) {
+    setControlsEnabled(true);
+
+    if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+        QString detail = QString::fromLocal8Bit(controlProcess->readAllStandardError()).trimmed();
+        QMessageBox::warning(this, tr("Error"),
+            tr("vmctl failed:\n%1").arg(detail.isEmpty() ? tr("unknown error") : detail));
+    }
+
+    refreshList();
+}
+
+void MainWindow::controlFailed(QProcess::ProcessError error) {
+    // finished() is not emitted when the process never starts
+    if (error != QProcess::FailedToStart) return;
+
+    setControlsEnabled(true);
+    QMessageBox::critical(this, tr("Error"),
+        tr("Could not run vmctl: %1").arg(controlProcess->errorString()));
+}
+
+void MainWindow::setControlsEnabled(bool enabled) {
+    btnStart->setEnabled(enabled);
+    btnStop->setEnabled(enabled);
 }
 
 void MainWindow::openConsole() {

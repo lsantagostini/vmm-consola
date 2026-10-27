@@ -7,12 +7,14 @@
 
 VmmManager::VmmManager() {}
 
-QStringList VmmManager::readConfiguration(const QString &filePath)
+QStringList VmmManager::readConfiguration(const QString &filePath, bool *ok)
 {
     QStringList vms;
     QFile file(filePath);
 
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    bool opened = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (ok) *ok = opened;
+    if (!opened) {
         return vms;
     }
 
